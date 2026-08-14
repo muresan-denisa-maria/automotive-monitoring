@@ -51,5 +51,12 @@ struct BrakeData {
     double brakePadWear; //uzura placutelor de frana
     double brakeDiscTemperature; //temperatura discurilor de frana
 };
+struct TelemetryData
+{
+    EngineData engine;
+    TransmissionData transmission;
+    BatteryData battery;
+    BrakeData brakes;
+};
 
 #endif 
