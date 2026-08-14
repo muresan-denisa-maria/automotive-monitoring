@@ -6,7 +6,7 @@
 class Battery
 {
 public:
-    Battery();
+    Battery(const BatteryData& initialData);
 
     void update(double deltaTime);
 

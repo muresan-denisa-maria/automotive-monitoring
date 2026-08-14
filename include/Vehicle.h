@@ -10,7 +10,13 @@
 class Vehicle
 {
 public:
-    Vehicle();
+    Vehicle(
+        const EngineConfiguration& engineConfiguration,
+        const EngineData& engineData,
+        const BatteryData& batteryData,
+        const TransmissionData& transmissionData,
+        const BrakeData& brakeData
+    );
 
     void update(double deltaTime);
 
@@ -20,7 +26,7 @@ private:
     Engine engine;
     Battery battery;
     Transmission transmission;
-    Brake brakes;
+    Brake brake;
 };
 
 #endif

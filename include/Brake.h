@@ -6,7 +6,7 @@
 class Brake
 {
 public:
-    Brake();
+    Brake(const BrakeData& initialData);
 
     void update(double deltaTime);
 

@@ -56,7 +56,7 @@ struct TelemetryData
     EngineData engine;
     TransmissionData transmission;
     BatteryData battery;
-    BrakeData brakes;
+    BrakeData brake;
 };
 
 #endif 

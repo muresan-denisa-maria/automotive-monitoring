@@ -6,7 +6,7 @@
 class Transmission
 {
 public:
-    Transmission();
+    Transmission(const TransmissionData& initialData);
 
     void update(double deltaTime);
 
