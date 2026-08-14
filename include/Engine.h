@@ -1,14 +1,18 @@
-#include "TelemetryData.h"
-class Engine{
-    private:
-    EngineData engineData;
+#ifndef ENGINE_H
+#define ENGINE_H
 
-    public:
+#include "TelemetryData.h"
+class Engine
+{
+public:
     Engine();
 
-    void start();
-    void stop();
+    void update(double deltaTime);
 
-EngineData getEngineData();
-    void setEngineData( EngineData& data);
+    EngineData getTelemetry() const;
+
+private:
+    EngineData data;
 };
+
+#endif
