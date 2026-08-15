@@ -44,6 +44,18 @@ struct BatteryData {
     double batteryTemperature; //temperatura bateriei
     double batteryStateOfCharge; //starea de incarcare a bateriei
 };
+struct AlternatorData {
+        //pentru Alternator
+    double alternatorVoltage;
+    double alternatorCurrent;
+    double alternatorTemperature;
+};
+struct StarterData {
+        //pentru Starter
+    double starterCurrent;
+    double starterVoltage;
+    double starterTemperature;
+};
 
 struct BrakeData {
         //pentru Brake
@@ -57,6 +69,8 @@ struct TelemetryData
     TransmissionData transmission;
     BatteryData battery;
     BrakeData brake;
+    AlternatorData alternator;
+    StarterData starter;
 };
 
 #endif 

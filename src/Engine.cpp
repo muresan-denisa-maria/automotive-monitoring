@@ -11,7 +11,7 @@ Engine::Engine(
 
 void Engine::update(double deltaTime)
 {
-    // Vom implementa aici simularea motorului.
+    // Vom implementa aici simularea motorului
 }
 
 EngineData Engine::getTelemetry() const
