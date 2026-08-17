@@ -15,30 +15,31 @@
 class Vehicle
 {
 public:
-   Vehicle(
-    const EngineConfiguration& engineConfiguration,
-    const EngineData& engineData,
+    Vehicle(
+        const EngineConfiguration& engineConfiguration,
+        const EngineData& engineData,
 
-    const BatteryConfiguration& batteryConfiguration,
-    const BatteryData& batteryData,
+        const BatteryConfiguration& batteryConfiguration,
+        const BatteryData& batteryData,
 
-    const AlternatorConfiguration& alternatorConfiguration,
-    const AlternatorData& alternatorData,
+        const AlternatorConfiguration& alternatorConfiguration,
+        const AlternatorData& alternatorData,
 
-    const StarterConfiguration& starterConfiguration,
-    const StarterData& starterData,
+        const StarterConfiguration& starterConfiguration,
+        const StarterData& starterData,
 
-    const TransmissionData& transmissionData,
+        const TransmissionConfiguration& transmissionConfiguration,
+        const TransmissionData& transmissionData,
 
-    const BrakeConfiguration& brakeConfiguration,
-    const BrakeData& brakeData,
+        const BrakeConfiguration& brakeConfiguration,
+        const BrakeData& brakeData,
 
-    const AcceleratorConfiguration& acceleratorConfiguration,
-    const AcceleratorData& acceleratorData,
+        const AcceleratorConfiguration& acceleratorConfiguration,
+        const AcceleratorData& acceleratorData,
 
-    const ClutchConfiguration& clutchConfiguration,
-    const ClutchData& clutchData
-);
+        const ClutchConfiguration& clutchConfiguration,
+        const ClutchData& clutchData
+    );
 
     void update(double deltaTime);
 
