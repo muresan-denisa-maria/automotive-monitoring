@@ -52,9 +52,9 @@ struct AlternatorData {
 };
 struct StarterData {
         //pentru Starter
-    double starterCurrent;
-    double starterVoltage;
-    double starterTemperature;
+    double starterCurrent; //curentul consumat de starter
+    double starterVoltage; //tensiunea starterului
+    double starterTemperature; //temperatura starterului
 };
 
 struct BrakeData {
@@ -62,6 +62,17 @@ struct BrakeData {
     double brakeFluidPressure; //presiunea lichidului de frana
     double brakePadWear; //uzura placutelor de frana
     double brakeDiscTemperature; //temperatura discurilor de frana
+};
+struct AcceleratorData {
+        //pentru Accelerator
+    double throttlePosition; //pozitia clapetei de acceleratie
+};
+struct ClutchData {
+        //pentru Clutch
+    double clutchEngagement; //gradul de cuplare al ambreiajului in procente
+    double transmittedTorque; //cuplul transmis prin ambreiaj
+    double clutchSlip; //diferenta de turatie dintre motor si transmisie
+    double clutchDiscTemperature; //temperatura discului de ambreiaj
 };
 struct TelemetryData
 {
@@ -71,6 +82,8 @@ struct TelemetryData
     BrakeData brake;
     AlternatorData alternator;
     StarterData starter;
+    ClutchData clutch;
+
 };
 
 #endif 
