@@ -82,8 +82,8 @@ struct TelemetryData
     BrakeData brake;
     AlternatorData alternator;
     StarterData starter;
+    AcceleratorData accelerator;
     ClutchData clutch;
-
 };
 
 #endif 
