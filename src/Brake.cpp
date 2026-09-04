@@ -7,7 +7,27 @@ Brake::Brake(
 )
 {
     this->configuration = configuration;
-    data = initialData;
+    this->data = initialData;
+
+    health = 1.0;
+}
+
+
+void Brake::setHealth(
+    double health
+)
+{
+    if (health < 0.0)
+    {
+        health = 0.0;
+    }
+
+    if (health > 1.0)
+    {
+        health = 1.0;
+    }
+
+    this->health = health;
 }
 
 
@@ -19,80 +39,83 @@ void Brake::update(
     double ambientTemperature
 )
 {
-    // Calcularea fortei de franare
-    double brakeForce =
-        (brakeInput / 100.0) *
-        configuration.maximumBrakeForce;
-
-
-    // Calcularea deceleratiei folosind F = m * a
-    double deceleration =
-        brakeForce /
-        vehicleMass;
-
-
-    // Calcularea vitezei dupa franare
-    double initialSpeed =
-        vehicleSpeed;
-
-    double newSpeed =
-        initialSpeed -
-        deceleration * deltaTime;
-
-    if (newSpeed < 0)
+    if (brakeInput < 0.0)
     {
-        newSpeed = 0;
+        brakeInput = 0.0;
     }
 
+    if (brakeInput > 100.0)
+    {
+        brakeInput = 100.0;
+    }
 
-    // Calcularea energiei cinetice inainte de franare
-    double initialKineticEnergy =
+    double effectiveMaximumBrakeForce =
+        configuration.maximumBrakeForce *
+        health;
+
+    double brakeForce =
+        (brakeInput / 100.0) *
+        effectiveMaximumBrakeForce;
+
+    data.brakeForce =
+        brakeForce;
+
+    double deceleration =
+        0.0;
+
+    if (vehicleMass > 0.0)
+    {
+        deceleration =
+            brakeForce /
+            vehicleMass;
+    }
+
+    double newSpeed =
+        vehicleSpeed -
+        deceleration *
+        deltaTime;
+
+    if (newSpeed < 0.0)
+    {
+        newSpeed = 0.0;
+    }
+
+    double kineticEnergyBefore =
         0.5 *
         vehicleMass *
-        initialSpeed *
-        initialSpeed;
+        vehicleSpeed *
+        vehicleSpeed;
 
-
-    // Calcularea energiei cinetice dupa franare
-    double finalKineticEnergy =
+    double kineticEnergyAfter =
         0.5 *
         vehicleMass *
         newSpeed *
         newSpeed;
 
-
-    // Energia transformata in timpul franarii
     double brakingEnergy =
-        initialKineticEnergy -
-        finalKineticEnergy;
+        kineticEnergyBefore -
+        kineticEnergyAfter;
 
+    if (brakingEnergy < 0.0)
+    {
+        brakingEnergy = 0.0;
+    }
 
-    // Energia care ajunge la sistemul de franare
-    double brakeEnergy =
+    double discEnergy =
         brakingEnergy *
         configuration.brakeEnergyFraction;
 
+    double thermalCapacity =
+        configuration.brakeDiscMass *
+        configuration.brakeDiscSpecificHeat;
 
-    // Impartim energia intre cele patru discuri
-    double discEnergy =
-        brakeEnergy / 4.0;
+    if (thermalCapacity > 0.0)
+    {
+        data.brakeDiscTemperature +=
+            discEnergy /
+            thermalCapacity;
+    }
 
-
-    // Calcularea cresterii temperaturii discului
-    // Q = m * c * deltaT
-    double temperatureIncrease =
-        discEnergy /
-        (
-            configuration.brakeDiscMass *
-            configuration.brakeDiscSpecificHeat
-        );
-
-    data.brakeDiscTemperature +=
-        temperatureIncrease;
-
-
-    // Calcularea racirii discului
-    // P = h * A * (Tdisc - Tambient)
     double coolingPower =
         configuration.coolingCoefficient *
         configuration.brakeDiscArea *
@@ -101,25 +124,17 @@ void Brake::update(
             ambientTemperature
         );
 
-
-    // Energia pierduta prin racire
     double coolingEnergy =
-        coolingPower * deltaTime;
+        coolingPower *
+        deltaTime;
 
+    if (thermalCapacity > 0.0)
+    {
+        data.brakeDiscTemperature -=
+            coolingEnergy /
+            thermalCapacity;
+    }
 
-    // Scaderea temperaturii datorita racirii
-    double coolingTemperature =
-        coolingEnergy /
-        (
-            configuration.brakeDiscMass *
-            configuration.brakeDiscSpecificHeat
-        );
-
-    data.brakeDiscTemperature -=
-        coolingTemperature;
-
-
-    // Temperatura discului nu poate fi mai mica decat temperatura mediului
     if (data.brakeDiscTemperature <
         ambientTemperature)
     {
@@ -127,27 +142,22 @@ void Brake::update(
             ambientTemperature;
     }
 
-
-    // Calcularea uzurii placutelor
-    double padWear =
-        brakeEnergy *
+    double wear =
+        brakingEnergy *
         configuration.brakePadWearCoefficient;
 
     data.brakePadWear -=
-        padWear;
+        wear;
 
-
-    // Uzura nu poate fi mai mica de 0
-    if (data.brakePadWear < 0)
+    if (data.brakePadWear < 0.0)
     {
-        data.brakePadWear = 0;
+        data.brakePadWear = 0.0;
     }
 
-
-    // Calcularea presiunii lichidului de frana
     data.brakeFluidPressure =
         (brakeInput / 100.0) *
-        configuration.maximumBrakePressure;
+        configuration.maximumBrakePressure *
+        health;
 }
 
 

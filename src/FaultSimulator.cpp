@@ -1,102 +1,93 @@
 #include "FaultSimulator.h"
 
-#include <random>
-
 
 FaultSimulator::FaultSimulator()
+    : randomGenerator(
+        std::random_device{}()
+    )
 {
-    faultState.type = FaultType::None;
-    faultState.severity = 0.0;
-    faultState.active = false;
+    faultState.type =
+        FaultType::None;
 
-    timeSinceStart = 0.0;
+    faultState.severity =
+        0.0;
 
-    std::random_device randomDevice;
-    std::mt19937 generator(randomDevice());
+    faultState.active =
+        false;
 
-    std::uniform_real_distribution<double> distribution(
-        20.0,
-        60.0
-    );
+    timeSinceStart =
+        0.0;
+
+    std::uniform_real_distribution<double>
+        timeDistribution(
+            8.0,
+            12.0
+        );
 
     timeUntilNextFault =
-        distribution(generator);
+        timeDistribution(
+            randomGenerator
+        );
 }
 
 
-void FaultSimulator::update(double deltaTime)
+void FaultSimulator::update(
+    double deltaTime
+)
 {
-    timeSinceStart += deltaTime;
+    timeSinceStart +=
+        deltaTime;
 
-    if (faultState.active)
+    if (!faultState.active)
+    {
+        if (timeSinceStart >=
+            timeUntilNextFault)
+        {
+            std::uniform_int_distribution<int>
+                faultDistribution(
+                    1,
+                    3
+                );
+
+            int randomFault =
+                faultDistribution(
+                    randomGenerator
+                );
+
+            if (randomFault == 1)
+            {
+                faultState.type =
+                    FaultType::CoolingSystem;
+            }
+            else if (randomFault == 2)
+            {
+                faultState.type =
+                    FaultType::Alternator;
+            }
+            else
+            {
+                faultState.type =
+                    FaultType::Brake;
+            }
+
+            faultState.active =
+                true;
+
+            faultState.severity =
+                0.10;
+        }
+    }
+    else
     {
         faultState.severity +=
-            0.001 * deltaTime;
+            0.03 *
+            deltaTime;
 
         if (faultState.severity > 1.0)
         {
-            faultState.severity = 1.0;
+            faultState.severity =
+                1.0;
         }
-
-        return;
-    }
-
-
-    if (timeSinceStart >= timeUntilNextFault)
-    {
-        std::random_device randomDevice;
-        std::mt19937 generator(randomDevice());
-
-        std::uniform_int_distribution<int> faultDistribution(
-            1,
-            7
-        );
-
-        int selectedFault =
-            faultDistribution(generator);
-
-
-        switch (selectedFault)
-        {
-        case 1:
-            faultState.type =
-                FaultType::CoolingSystem;
-            break;
-
-        case 2:
-            faultState.type =
-                FaultType::Battery;
-            break;
-
-        case 3:
-            faultState.type =
-                FaultType::Alternator;
-            break;
-
-        case 4:
-            faultState.type =
-                FaultType::Brake;
-            break;
-
-        case 5:
-            faultState.type =
-                FaultType::Clutch;
-            break;
-
-        case 6:
-            faultState.type =
-                FaultType::Engine;
-            break;
-
-        case 7:
-            faultState.type =
-                FaultType::Transmission;
-            break;
-        }
-
-
-        faultState.severity = 0.01;
-        faultState.active = true;
     }
 }
 
@@ -104,4 +95,69 @@ void FaultSimulator::update(double deltaTime)
 FaultState FaultSimulator::getFaultState() const
 {
     return faultState;
+}
+
+
+FaultEffects FaultSimulator::getFaultEffects() const
+{
+    FaultEffects effects{};
+
+    effects.coolingSystemHealth =
+        1.0;
+
+    effects.alternatorHealth =
+        1.0;
+
+    effects.brakeHealth =
+        1.0;
+
+    if (!faultState.active)
+    {
+        return effects;
+    }
+
+    if (faultState.type ==
+        FaultType::CoolingSystem)
+    {
+        effects.coolingSystemHealth =
+            1.0 -
+            0.90 *
+            faultState.severity;
+    }
+    else if (faultState.type ==
+             FaultType::Alternator)
+    {
+        effects.alternatorHealth =
+            1.0 -
+            0.95 *
+            faultState.severity;
+    }
+    else if (faultState.type ==
+             FaultType::Brake)
+    {
+        effects.brakeHealth =
+            1.0 -
+            0.75 *
+            faultState.severity;
+    }
+
+    if (effects.coolingSystemHealth < 0.10)
+    {
+        effects.coolingSystemHealth =
+            0.10;
+    }
+
+    if (effects.alternatorHealth < 0.05)
+    {
+        effects.alternatorHealth =
+            0.05;
+    }
+
+    if (effects.brakeHealth < 0.25)
+    {
+        effects.brakeHealth =
+            0.25;
+    }
+
+    return effects;
 }

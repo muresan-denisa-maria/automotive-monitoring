@@ -20,7 +20,6 @@ void Clutch::update(
     double ambientTemperature
 )
 {
-    // Limitarea inputului ambreiajului intre 0% si 100%
     if (clutchInput < 0.0)
     {
         clutchInput = 0.0;
@@ -31,56 +30,18 @@ void Clutch::update(
         clutchInput = 100.0;
     }
 
-
-    // Calcularea gradului de cuplare al ambreiajului
     double clutchEngagement =
         1.0 -
-        (clutchInput / 100.0);
-
+        clutchInput / 100.0;
 
     data.clutchEngagement =
-        clutchEngagement * 100.0;
+        clutchEngagement *
+        100.0;
 
-
-    // Calcularea cuplului maxim transmis
     double maximumTransmittedTorque =
         configuration.maximumClutchTorque *
         clutchEngagement;
 
-
-    // Cuplul transmis nu poate depasi cuplul motorului
-    double transmittedTorque =
-        engineTorque;
-
-    if (transmittedTorque >
-        maximumTransmittedTorque)
-    {
-        transmittedTorque =
-            maximumTransmittedTorque;
-    }
-
-
-    if (transmittedTorque < 0.0)
-    {
-        transmittedTorque = 0.0;
-    }
-
-
-    data.transmittedTorque =
-        transmittedTorque;
-
-
-    // Calcularea diferentei de turatie dintre motor si transmisie
-    double rpmDifference =
-        engineRpm -
-        transmissionRpm;
-
-
-    data.clutchSlip =
-        rpmDifference;
-
-
-    // Conversia RPM in rad/s
     double engineAngularVelocity =
         engineRpm *
         2.0 *
@@ -93,41 +54,59 @@ void Clutch::update(
         3.14159265359 /
         60.0;
 
-
-    // Diferenta de viteza unghiulara
     double slipAngularVelocity =
         engineAngularVelocity -
         transmissionAngularVelocity;
 
+    double synchronizationTorque =
+        configuration.slipTorqueCoefficient *
+        slipAngularVelocity *
+        clutchEngagement;
 
-    if (slipAngularVelocity < 0.0)
+    double transmittedTorque =
+        engineTorque *
+        clutchEngagement +
+        synchronizationTorque;
+
+    if (transmittedTorque >
+        maximumTransmittedTorque)
     {
-        slipAngularVelocity =
-            -slipAngularVelocity;
+        transmittedTorque =
+            maximumTransmittedTorque;
     }
 
+    if (transmittedTorque <
+        -maximumTransmittedTorque)
+    {
+        transmittedTorque =
+            -maximumTransmittedTorque;
+    }
 
-    // Calcularea puterii pierdute prin alunecare
-    // P = T * omega
+    data.transmittedTorque =
+        transmittedTorque;
+
+    data.clutchSlip =
+        engineRpm -
+        transmissionRpm;
+
     double slipPower =
         transmittedTorque *
         slipAngularVelocity;
 
+    if (slipPower < 0.0)
+    {
+        slipPower =
+            -slipPower;
+    }
 
-    // Energia pierduta prin alunecare
     double slipEnergy =
         slipPower *
         deltaTime;
 
-
-    // Energia care ajunge in discul de ambreiaj
     double clutchEnergy =
         slipEnergy *
         configuration.clutchEnergyFraction;
 
-
-    // Calcularea cresterii temperaturii discului
-    // Q = m * c * deltaT
     double temperatureIncrease =
         clutchEnergy /
         (
@@ -138,9 +117,6 @@ void Clutch::update(
     data.clutchDiscTemperature +=
         temperatureIncrease;
 
-
-    // Calcularea racirii discului
-    // P = h * (Tclutch - Tambient)
     double coolingPower =
         configuration.coolingCoefficient *
         (
@@ -148,14 +124,10 @@ void Clutch::update(
             ambientTemperature
         );
 
-
-    // Energia pierduta prin racire
     double coolingEnergy =
         coolingPower *
         deltaTime;
 
-
-    // Scaderea temperaturii datorita racirii
     double coolingTemperature =
         coolingEnergy /
         (
@@ -166,8 +138,6 @@ void Clutch::update(
     data.clutchDiscTemperature -=
         coolingTemperature;
 
-
-    // Temperatura discului nu poate fi mai mica decat temperatura mediului
     if (data.clutchDiscTemperature <
         ambientTemperature)
     {

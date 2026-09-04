@@ -2,16 +2,20 @@
 #define ALTERNATOR_H
 
 #include "TelemetryData.h"
+
 struct AlternatorConfiguration
 {
-    double maximumCurrent; //curentul maxim produs de alternator
-    double maximumRpm; //turatia la care alternatorul produce curentul maxim
-    double nominalVoltage; //tensiunea nominala a alternatorului
-    double efficiency; //eficienta alternatorului
-    double thermalCapacity; //capacitatea termica a alternatorului
-    double coolingCoefficient; //coeficientul de racire al alternatorului
-    double ambientTemperature; //temperatura mediului
+    double maximumCurrent;
+    double maximumRpm;
+    double nominalVoltage;
+
+    double efficiency;
+
+    double thermalCapacity;
+    double coolingCoefficient;
+    double ambientTemperature;
 };
+
 class Alternator
 {
 public:
@@ -25,11 +29,17 @@ public:
         double engineRpm
     );
 
+    void setHealth(
+        double health
+    );
+
     AlternatorData getTelemetry() const;
 
 private:
     AlternatorConfiguration configuration;
     AlternatorData data;
+
+    double health;
 };
 
 #endif

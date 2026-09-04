@@ -1,12 +1,12 @@
 #ifndef TELEMETRY_DATA_H
 #define TELEMETRY_DATA_H
 
-
 struct EngineData
 {
     // Engine
     double rpm;
     double engineTemperature;
+    double engineTorque;
 
     // Oil system
     double oilPressure;
@@ -30,7 +30,6 @@ struct EngineData
     double exhaustOxygenPercentage;
 };
 
-
 struct TransmissionData
 {
     // Transmission
@@ -45,7 +44,6 @@ struct TransmissionData
     double vehicleSpeed;
 };
 
-
 struct BatteryData
 {
     // Battery
@@ -55,7 +53,6 @@ struct BatteryData
     double batteryStateOfCharge;
 };
 
-
 struct AlternatorData
 {
     // Alternator
@@ -63,7 +60,6 @@ struct AlternatorData
     double alternatorCurrent;
     double alternatorTemperature;
 };
-
 
 struct StarterData
 {
@@ -73,22 +69,20 @@ struct StarterData
     double starterTemperature;
 };
 
-
 struct BrakeData
 {
     // Brake
     double brakeFluidPressure;
     double brakePadWear;
     double brakeDiscTemperature;
+    double brakeForce;
 };
-
 
 struct AcceleratorData
 {
     // Accelerator
     double throttlePosition;
 };
-
 
 struct ClutchData
 {
@@ -99,25 +93,16 @@ struct ClutchData
     double clutchDiscTemperature;
 };
 
-
 struct TelemetryData
 {
     EngineData engine;
-
     TransmissionData transmission;
-
     BatteryData battery;
-
     AlternatorData alternator;
-
     StarterData starter;
-
     BrakeData brake;
-
     AcceleratorData accelerator;
-
     ClutchData clutch;
 };
-
 
 #endif

@@ -28,8 +28,10 @@ public:
 
     void update(
         double deltaTime,
-        double engineRpm,
-        double clutchTorque
+        double clutchTorque,
+        int gearPosition,
+        double vehicleMass,
+        double brakeForce
     );
 
     TransmissionData getTelemetry() const;

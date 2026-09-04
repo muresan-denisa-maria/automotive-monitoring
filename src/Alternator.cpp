@@ -6,8 +6,33 @@ Alternator::Alternator(
     const AlternatorData& initialData
 )
 {
-    this->configuration = configuration;
-    data = initialData;
+    this->configuration =
+        configuration;
+
+    this->data =
+        initialData;
+
+    health =
+        1.0;
+}
+
+
+void Alternator::setHealth(
+    double health
+)
+{
+    if (health < 0.0)
+    {
+        health = 0.0;
+    }
+
+    if (health > 1.0)
+    {
+        health = 1.0;
+    }
+
+    this->health =
+        health;
 }
 
 
@@ -16,65 +41,77 @@ void Alternator::update(
     double engineRpm
 )
 {
-    // Calcularea curentului produs de alternator in functie de RPM
     double rpmRatio =
-        engineRpm /
-        configuration.maximumRpm;
+        0.0;
 
-    if (rpmRatio > 1.0)
+    if (configuration.maximumRpm > 0.0)
     {
-        rpmRatio = 1.0;
+        rpmRatio =
+            engineRpm /
+            configuration.maximumRpm;
     }
 
     if (rpmRatio < 0.0)
     {
-        rpmRatio = 0.0;
+        rpmRatio =
+            0.0;
     }
+
+    if (rpmRatio > 1.0)
+    {
+        rpmRatio =
+            1.0;
+    }
+
+    double effectiveMaximumCurrent =
+        configuration.maximumCurrent *
+        health;
 
     data.alternatorCurrent =
         rpmRatio *
-        configuration.maximumCurrent;
+        effectiveMaximumCurrent;
 
+    if (engineRpm > 0.0)
+    {
+        data.alternatorVoltage =
+            configuration.nominalVoltage;
+    }
+    else
+    {
+        data.alternatorVoltage =
+            0.0;
 
-    // Calcularea tensiunii alternatorului
-    data.alternatorVoltage =
-        configuration.nominalVoltage;
+        data.alternatorCurrent =
+            0.0;
+    }
 
-
-    // Calcularea puterii produse de alternator
-    // P = V * I
     double electricalPower =
         data.alternatorVoltage *
         data.alternatorCurrent;
 
+    double efficiency =
+        configuration.efficiency;
 
-    // Calcularea puterii pierdute
+    if (efficiency < 0.01)
+    {
+        efficiency =
+            0.01;
+    }
+
+    if (efficiency > 1.0)
+    {
+        efficiency =
+            1.0;
+    }
+
+    double mechanicalPower =
+        electricalPower /
+        efficiency;
+
     double powerLoss =
-        electricalPower *
-        (
-            1.0 -
-            configuration.efficiency
-        );
+        mechanicalPower -
+        electricalPower;
 
-
-    // Calcularea energiei pierdute
-    double energyLoss =
-        powerLoss *
-        deltaTime;
-
-
-    // Calcularea cresterii temperaturii
-    // Q = C * deltaT
-    double temperatureIncrease =
-        energyLoss /
-        configuration.thermalCapacity;
-
-    data.alternatorTemperature +=
-        temperatureIncrease;
-
-
-    // Calcularea racirii alternatorului
-    // P = h * (T - Tambient)
     double coolingPower =
         configuration.coolingCoefficient *
         (
@@ -82,37 +119,25 @@ void Alternator::update(
             configuration.ambientTemperature
         );
 
+    double netHeatPower =
+        powerLoss -
+        coolingPower;
 
-    // Energia pierduta prin racire
-    double coolingEnergy =
-        coolingPower *
-        deltaTime;
+    if (configuration.thermalCapacity > 0.0)
+    {
+        data.alternatorTemperature +=
+            (
+                netHeatPower *
+                deltaTime
+            ) /
+            configuration.thermalCapacity;
+    }
 
-
-    // Scaderea temperaturii datorita racirii
-    double coolingTemperature =
-        coolingEnergy /
-        configuration.thermalCapacity;
-
-    data.alternatorTemperature -=
-        coolingTemperature;
-
-
-    // Temperatura alternatorului nu poate fi mai mica decat temperatura mediului
     if (data.alternatorTemperature <
         configuration.ambientTemperature)
     {
         data.alternatorTemperature =
             configuration.ambientTemperature;
-    }
-
-
-    // Curentul nu poate depasi valoarea maxima
-    if (data.alternatorCurrent >
-        configuration.maximumCurrent)
-    {
-        data.alternatorCurrent =
-            configuration.maximumCurrent;
     }
 }
 

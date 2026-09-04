@@ -69,132 +69,89 @@ Vehicle::Vehicle(
 }
 
 
-void Vehicle::update(double deltaTime)
+void Vehicle::update(
+    double deltaTime,
+    const VehicleInput& input
+)
 {
-    // Simularea defectelor
-    faultSimulator.update(deltaTime);
+    faultSimulator.update(
+        deltaTime
+    );
 
+    FaultEffects faultEffects =
+        faultSimulator.getFaultEffects();
 
-    // =====================================================
-    // 1. ACCELERATOR
-    // =====================================================
+    engine.setCoolingSystemHealth(
+        faultEffects.coolingSystemHealth
+    );
 
-    double acceleratorInput = 0.0;
+    alternator.setHealth(
+        faultEffects.alternatorHealth
+    );
+
+    brake.setHealth(
+        faultEffects.brakeHealth
+    );
 
     accelerator.update(
         deltaTime,
-        acceleratorInput
+        input.acceleratorInput
     );
 
+    starter.update(
+        deltaTime,
+        battery.getTelemetry().batteryVoltage,
+        input.startCommand,
+        20.0
+    );
 
-    // =====================================================
-    // 2. ENGINE
-    // =====================================================
-
-    engine.update(deltaTime);
-
-
-    // =====================================================
-    // 3. ALTERNATOR
-    // =====================================================
+    engine.update(
+        deltaTime,
+        accelerator.getTelemetry().throttlePosition,
+        clutch.getTelemetry().transmittedTorque,
+        input.startCommand,
+        20.0
+    );
 
     alternator.update(
         deltaTime,
         engine.getTelemetry().rpm
     );
 
-
-    // =====================================================
-    // 4. STARTER
-    // =====================================================
-
-    bool startCommand = false;
-
-    starter.update(
-        deltaTime,
-        battery.getTelemetry().batteryVoltage,
-        startCommand,
-        20.0
-    );
-
-
-    // =====================================================
-    // 5. BATTERY
-    // =====================================================
+    double electricalLoad =
+        10.0;
 
     battery.update(
         deltaTime,
-
-        alternator
-            .getTelemetry()
-            .alternatorCurrent,
-
-        starter
-            .getTelemetry()
-            .starterCurrent,
-
-        0.0,
-
+        alternator.getTelemetry().alternatorCurrent,
+        starter.getTelemetry().starterCurrent,
+        electricalLoad,
         20.0
     );
-
-
-    // =====================================================
-    // 6. CLUTCH
-    // =====================================================
 
     clutch.update(
         deltaTime,
-
-        0.0,
-
-        engine
-            .getTelemetry()
-            .rpm,
-
-        transmission
-            .getTelemetry()
-            .transmissionRpm,
-
-        0.0,
-
+        engine.getTelemetry().engineTorque,
+        engine.getTelemetry().rpm,
+        transmission.getTelemetry().transmissionRpm,
+        input.clutchInput,
         20.0
     );
-
-
-    // =====================================================
-    // 7. TRANSMISSION
-    // =====================================================
-
-    transmission.update(
-        deltaTime,
-
-        engine
-            .getTelemetry()
-            .rpm,
-
-        clutch
-            .getTelemetry()
-            .transmittedTorque
-    );
-
-
-    // =====================================================
-    // 8. BRAKE
-    // =====================================================
 
     brake.update(
         deltaTime,
-
         1500.0,
-
-        transmission
-            .getTelemetry()
-            .vehicleSpeed,
-
-        0.0,
-
+        transmission.getTelemetry().vehicleSpeed,
+        input.brakeInput,
         20.0
+    );
+
+    transmission.update(
+        deltaTime,
+        clutch.getTelemetry().transmittedTorque,
+        input.gearPosition,
+        1500.0,
+        brake.getTelemetry().brakeForce
     );
 }
 
@@ -203,38 +160,29 @@ TelemetryData Vehicle::getTelemetry() const
 {
     TelemetryData telemetry{};
 
-
     telemetry.engine =
         engine.getTelemetry();
-
 
     telemetry.battery =
         battery.getTelemetry();
 
-
     telemetry.alternator =
         alternator.getTelemetry();
-
 
     telemetry.starter =
         starter.getTelemetry();
 
-
     telemetry.transmission =
         transmission.getTelemetry();
-
 
     telemetry.brake =
         brake.getTelemetry();
 
-
     telemetry.accelerator =
         accelerator.getTelemetry();
 
-
     telemetry.clutch =
         clutch.getTelemetry();
-
 
     return telemetry;
 }

@@ -1,26 +1,91 @@
 #include <iostream>
 
 #include "Vehicle.h"
+#include "FaultSimulator.h"
+
+
+const char* faultTypeToString(
+    FaultType type
+)
+{
+    switch (type)
+    {
+    case FaultType::CoolingSystem:
+        return "Cooling System";
+
+    case FaultType::Alternator:
+        return "Alternator";
+
+    case FaultType::Brake:
+        return "Brake";
+
+    default:
+        return "None";
+    }
+}
 
 
 int main()
 {
-    // =====================================================
-    // ENGINE
-    // =====================================================
-
     EngineConfiguration engineConfiguration{};
 
     engineConfiguration.maxRpm = 6500;
+    engineConfiguration.idleRpm = 800;
+
     engineConfiguration.engineDisplacement = 2.0;
+
     engineConfiguration.oilCapacity = 5.0;
     engineConfiguration.coolantCapacity = 7.0;
+
+    engineConfiguration.maximumTorque = 220.0;
+    engineConfiguration.engineInertia = 0.25;
+    engineConfiguration.frictionTorque = 15.0;
+    engineConfiguration.starterTorque = 50.0;
+    engineConfiguration.minimumCombustionRpm = 200.0;
+
+    engineConfiguration.engineThermalCapacity = 100000.0;
+    engineConfiguration.oilThermalCapacity = 30000.0;
+    engineConfiguration.coolantThermalCapacity = 30000.0;
+
+    engineConfiguration.idleHeatPower = 12000.0;
+    engineConfiguration.maximumHeatPower = 60000.0;
+
+    engineConfiguration.engineToCoolantCoefficient = 500.0;
+    engineConfiguration.engineToOilCoefficient = 150.0;
+
+    engineConfiguration.oilCoolingCoefficient = 40.0;
+    engineConfiguration.radiatorCoolingCoefficient = 700.0;
+
+    engineConfiguration.minimumOilPressure = 1.5;
+    engineConfiguration.maximumOilPressure = 4.5;
+
+    engineConfiguration.coolantPumpRatio = 1.0;
+    engineConfiguration.maximumCoolantFlowRate = 120.0;
+
+    engineConfiguration.minimumCoolantPressure = 0.5;
+    engineConfiguration.maximumCoolantPressure = 1.2;
+
+    engineConfiguration.ambientPressure = 1.0;
+    engineConfiguration.minimumManifoldPressure = 0.30;
+
+    engineConfiguration.intakeHeatTransferFactor = 0.15;
+    engineConfiguration.intakeResponseTime = 1.0;
+
+    engineConfiguration.idleExhaustGasTemperature = 350.0;
+    engineConfiguration.maximumExhaustGasTemperature = 900.0;
+    engineConfiguration.exhaustResponseTime = 0.5;
+
+    engineConfiguration.maximumExhaustBackpressure = 0.30;
+
+    engineConfiguration.minimumExhaustOxygenPercentage = 0.5;
+    engineConfiguration.maximumExhaustOxygenPercentage = 4.0;
 
 
     EngineData engineData{};
 
     engineData.rpm = 0;
     engineData.engineTemperature = 20;
+    engineData.engineTorque = 0;
 
     engineData.oilPressure = 0;
     engineData.oilTemperature = 20;
@@ -40,10 +105,6 @@ int main()
     engineData.exhaustOxygenPercentage = 21;
 
 
-    // =====================================================
-    // BATTERY
-    // =====================================================
-
     BatteryConfiguration batteryConfiguration{};
 
     batteryConfiguration.nominalVoltage = 12.6;
@@ -61,10 +122,6 @@ int main()
     batteryData.batteryTemperature = 20;
     batteryData.batteryStateOfCharge = 100;
 
-
-    // =====================================================
-    // ALTERNATOR
-    // =====================================================
 
     AlternatorConfiguration alternatorConfiguration{};
 
@@ -84,10 +141,6 @@ int main()
     alternatorData.alternatorTemperature = 20;
 
 
-    // =====================================================
-    // STARTER
-    // =====================================================
-
     StarterConfiguration starterConfiguration{};
 
     starterConfiguration.maximumCurrent = 250;
@@ -103,10 +156,6 @@ int main()
     starterData.starterVoltage = 0;
     starterData.starterTemperature = 20;
 
-
-    // =====================================================
-    // TRANSMISSION
-    // =====================================================
 
     TransmissionConfiguration transmissionConfiguration{};
 
@@ -129,17 +178,12 @@ int main()
     transmissionData.transmissionFluidLevel = 100;
     transmissionData.transmissionFluidPressure = 0;
 
-    // 0 = neutral
     transmissionData.transmissionGearPosition = 0;
 
     transmissionData.transmissionRpm = 0;
     transmissionData.wheelRpm = 0;
     transmissionData.vehicleSpeed = 0;
 
-
-    // =====================================================
-    // BRAKE
-    // =====================================================
 
     BrakeConfiguration brakeConfiguration{};
 
@@ -163,11 +207,8 @@ int main()
     brakeData.brakeFluidPressure = 0;
     brakeData.brakePadWear = 100;
     brakeData.brakeDiscTemperature = 20;
+    brakeData.brakeForce = 0;
 
-
-    // =====================================================
-    // ACCELERATOR
-    // =====================================================
 
     AcceleratorConfiguration acceleratorConfiguration{};
 
@@ -180,10 +221,6 @@ int main()
     acceleratorData.throttlePosition = 0;
 
 
-    // =====================================================
-    // CLUTCH
-    // =====================================================
-
     ClutchConfiguration clutchConfiguration{};
 
     clutchConfiguration.maximumClutchTorque = 300;
@@ -195,6 +232,8 @@ int main()
 
     clutchConfiguration.coolingCoefficient = 10;
 
+    clutchConfiguration.slipTorqueCoefficient = 1.0;
+
 
     ClutchData clutchData{};
 
@@ -203,10 +242,6 @@ int main()
     clutchData.clutchSlip = 0;
     clutchData.clutchDiscTemperature = 20;
 
-
-    // =====================================================
-    // VEHICLE
-    // =====================================================
 
     Vehicle vehicle(
         engineConfiguration,
@@ -235,19 +270,270 @@ int main()
     );
 
 
-    // =====================================================
-    // SIMULATION
-    // =====================================================
+    double deltaTime = 0.1;
 
-    vehicle.update(0.1);
+    VehicleInput input{};
 
 
-    // =====================================================
-    // TELEMETRY
-    // =====================================================
+    for (int i = 0; i < 300; i++)
+    {
+        double time =
+            i * deltaTime;
+
+        input.startCommand = false;
+        input.acceleratorInput = 0.0;
+        input.brakeInput = 0.0;
+        input.clutchInput = 0.0;
+        input.gearPosition = 1;
+
+
+        if (time < 0.6)
+        {
+            input.startCommand = true;
+            input.acceleratorInput = 0.0;
+            input.clutchInput = 100.0;
+            input.gearPosition = 0;
+        }
+
+        else if (time < 1.5)
+        {
+            input.acceleratorInput = 0.0;
+            input.clutchInput = 100.0;
+            input.gearPosition = 0;
+        }
+
+        else if (time < 3.0)
+        {
+            input.acceleratorInput = 30.0;
+            input.gearPosition = 1;
+
+            input.clutchInput =
+                100.0 -
+                (
+                    (time - 1.5) /
+                    1.5
+                ) *
+                100.0;
+
+            if (input.clutchInput < 0.0)
+            {
+                input.clutchInput = 0.0;
+            }
+        }
+
+        else if (time < 7.0)
+        {
+            input.acceleratorInput = 40.0;
+            input.clutchInput = 0.0;
+            input.gearPosition = 1;
+        }
+
+        else if (time < 7.3)
+        {
+            input.acceleratorInput = 0.0;
+            input.clutchInput = 100.0;
+            input.gearPosition = 2;
+        }
+
+        else if (time < 8.0)
+        {
+            input.acceleratorInput = 30.0;
+            input.gearPosition = 2;
+
+            input.clutchInput =
+                100.0 -
+                (
+                    (time - 7.3) /
+                    0.7
+                ) *
+                100.0;
+
+            if (input.clutchInput < 0.0)
+            {
+                input.clutchInput = 0.0;
+            }
+        }
+
+        else if (time < 11.0)
+        {
+            input.acceleratorInput = 40.0;
+            input.clutchInput = 0.0;
+            input.gearPosition = 2;
+        }
+
+        else if (time < 11.3)
+        {
+            input.acceleratorInput = 0.0;
+            input.clutchInput = 100.0;
+            input.gearPosition = 3;
+        }
+
+        else if (time < 12.0)
+        {
+            input.acceleratorInput = 30.0;
+            input.gearPosition = 3;
+
+            input.clutchInput =
+                100.0 -
+                (
+                    (time - 11.3) /
+                    0.7
+                ) *
+                100.0;
+
+            if (input.clutchInput < 0.0)
+            {
+                input.clutchInput = 0.0;
+            }
+        }
+
+        else if (time < 15.0)
+        {
+            input.acceleratorInput = 40.0;
+            input.clutchInput = 0.0;
+            input.gearPosition = 3;
+        }
+
+        else if (time < 15.3)
+        {
+            input.acceleratorInput = 0.0;
+            input.clutchInput = 100.0;
+            input.gearPosition = 4;
+        }
+
+        else if (time < 16.0)
+        {
+            input.acceleratorInput = 30.0;
+            input.gearPosition = 4;
+
+            input.clutchInput =
+                100.0 -
+                (
+                    (time - 15.3) /
+                    0.7
+                ) *
+                100.0;
+
+            if (input.clutchInput < 0.0)
+            {
+                input.clutchInput = 0.0;
+            }
+        }
+
+        else if (time < 20.0)
+        {
+            input.acceleratorInput = 40.0;
+            input.clutchInput = 0.0;
+            input.gearPosition = 4;
+        }
+
+        else if (time < 20.3)
+        {
+            input.acceleratorInput = 0.0;
+            input.clutchInput = 100.0;
+            input.gearPosition = 5;
+        }
+
+        else if (time < 21.0)
+        {
+            input.acceleratorInput = 30.0;
+            input.gearPosition = 5;
+
+            input.clutchInput =
+                100.0 -
+                (
+                    (time - 20.3) /
+                    0.7
+                ) *
+                100.0;
+
+            if (input.clutchInput < 0.0)
+            {
+                input.clutchInput = 0.0;
+            }
+        }
+
+        else if (time < 24.0)
+        {
+            input.acceleratorInput = 40.0;
+            input.clutchInput = 0.0;
+            input.gearPosition = 5;
+        }
+
+        else
+        {
+            input.acceleratorInput = 0.0;
+            input.brakeInput = 40.0;
+            input.clutchInput = 100.0;
+            input.gearPosition = 0;
+        }
+
+
+        vehicle.update(
+            deltaTime,
+            input
+        );
+
+
+        TelemetryData telemetry =
+            vehicle.getTelemetry();
+
+
+        FaultState fault =
+            vehicle.getFaultState();
+
+
+        std::cout
+            << "Time: "
+            << time + deltaTime
+            << " s"
+            << " | RPM: "
+            << telemetry.engine.rpm
+            << " | Gear: "
+            << telemetry.transmission.transmissionGearPosition
+            << " | Clutch: "
+            << telemetry.clutch.clutchEngagement
+            << "%"
+            << " | Brake: "
+            << input.brakeInput
+            << "%"
+            << " | Speed: "
+            << telemetry.transmission.vehicleSpeed * 3.6
+            << " km/h"
+            << " | Brake temp: "
+            << telemetry.brake.brakeDiscTemperature
+            << " C"
+            << std::endl;
+
+
+        if (fault.active &&
+            i % 10 == 0)
+        {
+            std::cout
+                << "FAULT -> "
+                << faultTypeToString(
+                    fault.type
+                )
+                << " | Severity: "
+                << fault.severity * 100.0
+                << "%"
+                << std::endl;
+        }
+    }
+
 
     TelemetryData telemetry =
         vehicle.getTelemetry();
+
+
+    FaultState finalFault =
+        vehicle.getFaultState();
+
+
+    std::cout
+        << std::endl
+        << "FINAL TELEMETRY"
+        << std::endl;
 
 
     std::cout
@@ -259,18 +545,98 @@ int main()
     std::cout
         << "Engine temperature: "
         << telemetry.engine.engineTemperature
+        << " C"
+        << std::endl;
+
+
+    std::cout
+        << "Oil temperature: "
+        << telemetry.engine.oilTemperature
+        << " C"
+        << std::endl;
+
+
+    std::cout
+        << "Oil pressure: "
+        << telemetry.engine.oilPressure
+        << " bar"
+        << std::endl;
+
+
+    std::cout
+        << "Coolant temperature: "
+        << telemetry.engine.coolantTemperature
+        << " C"
+        << std::endl;
+
+
+    std::cout
+        << "Coolant pressure: "
+        << telemetry.engine.coolantPressure
+        << " bar"
+        << std::endl;
+
+
+    std::cout
+        << "Coolant flow rate: "
+        << telemetry.engine.coolantFlowRate
+        << " L/min"
+        << std::endl;
+
+
+    std::cout
+        << "Coolant pump speed: "
+        << telemetry.engine.coolantPumpSpeed
+        << " RPM"
+        << std::endl;
+
+
+    std::cout
+        << "Intake air temperature: "
+        << telemetry.engine.intakeAirTemperature
+        << " C"
+        << std::endl;
+
+
+    std::cout
+        << "Intake manifold pressure: "
+        << telemetry.engine.intakeManifoldPressure
+        << " bar"
+        << std::endl;
+
+
+    std::cout
+        << "Exhaust gas temperature: "
+        << telemetry.engine.exhaustGasTemperature
+        << " C"
+        << std::endl;
+
+
+    std::cout
+        << "Exhaust backpressure: "
+        << telemetry.engine.exhaustBackpressure
+        << " bar"
+        << std::endl;
+
+
+    std::cout
+        << "Exhaust oxygen: "
+        << telemetry.engine.exhaustOxygenPercentage
+        << "%"
         << std::endl;
 
 
     std::cout
         << "Battery voltage: "
         << telemetry.battery.batteryVoltage
+        << " V"
         << std::endl;
 
 
     std::cout
         << "Battery current: "
         << telemetry.battery.batteryCurrent
+        << " A"
         << std::endl;
 
 
@@ -284,12 +650,21 @@ int main()
     std::cout
         << "Alternator current: "
         << telemetry.alternator.alternatorCurrent
+        << " A"
+        << std::endl;
+
+
+    std::cout
+        << "Alternator voltage: "
+        << telemetry.alternator.alternatorVoltage
+        << " V"
         << std::endl;
 
 
     std::cout
         << "Starter current: "
         << telemetry.starter.starterCurrent
+        << " A"
         << std::endl;
 
 
@@ -307,7 +682,7 @@ int main()
 
     std::cout
         << "Vehicle speed: "
-        << telemetry.transmission.vehicleSpeed
+        << telemetry.transmission.vehicleSpeed * 3.6
         << " km/h"
         << std::endl;
 
@@ -315,12 +690,27 @@ int main()
     std::cout
         << "Transmission temperature: "
         << telemetry.transmission.transmissionTemperature
+        << " C"
         << std::endl;
 
 
     std::cout
         << "Brake disc temperature: "
         << telemetry.brake.brakeDiscTemperature
+        << " C"
+        << std::endl;
+
+
+    std::cout
+        << "Brake force: "
+        << telemetry.brake.brakeForce
+        << " N"
+        << std::endl;
+
+
+    std::cout
+        << "Brake fluid pressure: "
+        << telemetry.brake.brakeFluidPressure
         << std::endl;
 
 
@@ -355,6 +745,38 @@ int main()
     std::cout
         << "Clutch disc temperature: "
         << telemetry.clutch.clutchDiscTemperature
+        << " C"
+        << std::endl;
+
+
+    std::cout
+        << std::endl
+        << "FINAL FAULT"
+        << std::endl;
+
+
+    std::cout
+        << "Fault: "
+        << faultTypeToString(
+            finalFault.type
+        )
+        << std::endl;
+
+
+    std::cout
+        << "Active: "
+        << (
+            finalFault.active
+                ? "Yes"
+                : "No"
+        )
+        << std::endl;
+
+
+    std::cout
+        << "Severity: "
+        << finalFault.severity * 100.0
+        << "%"
         << std::endl;
 
 

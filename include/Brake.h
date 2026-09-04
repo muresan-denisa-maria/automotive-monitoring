@@ -36,11 +36,17 @@ public:
         double ambientTemperature
     );
 
+    void setHealth(
+        double health
+    );
+
     BrakeData getTelemetry() const;
 
 private:
     BrakeConfiguration configuration;
     BrakeData data;
+
+    double health;
 };
 
 #endif

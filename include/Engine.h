@@ -12,13 +12,25 @@ public:
         const EngineData& initialData
     );
 
-    void update(double deltaTime);
+    void update(
+        double deltaTime,
+        double throttlePosition,
+        double loadTorque,
+        bool startCommand,
+        double ambientTemperature
+    );
+
+    void setCoolingSystemHealth(
+        double health
+    );
 
     EngineData getTelemetry() const;
 
 private:
     EngineConfiguration configuration;
     EngineData data;
+
+    double coolingSystemHealth;
 };
 
 #endif

@@ -13,6 +13,8 @@ struct ClutchConfiguration
     double clutchEnergyFraction;
 
     double coolingCoefficient;
+
+    double slipTorqueCoefficient;
 };
 
 class Clutch

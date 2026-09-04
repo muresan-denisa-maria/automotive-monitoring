@@ -12,6 +12,15 @@
 #include "FaultSimulator.h"
 #include "TelemetryData.h"
 
+struct VehicleInput
+{
+    double acceleratorInput;
+    double brakeInput;
+    double clutchInput;
+    bool startCommand;
+    int gearPosition;
+};
+
 class Vehicle
 {
 public:
@@ -41,7 +50,10 @@ public:
         const ClutchData& clutchData
     );
 
-    void update(double deltaTime);
+    void update(
+        double deltaTime,
+        const VehicleInput& input
+    );
 
     TelemetryData getTelemetry() const;
 

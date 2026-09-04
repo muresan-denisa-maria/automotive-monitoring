@@ -1,16 +1,14 @@
 #ifndef FAULT_SIMULATOR_H
 #define FAULT_SIMULATOR_H
 
+#include <random>
+
 enum class FaultType
 {
     None,
     CoolingSystem,
-    Battery,
     Alternator,
-    Brake,
-    Clutch,
-    Engine,
-    Transmission
+    Brake
 };
 
 struct FaultState
@@ -18,6 +16,13 @@ struct FaultState
     FaultType type;
     double severity;
     bool active;
+};
+
+struct FaultEffects
+{
+    double coolingSystemHealth;
+    double alternatorHealth;
+    double brakeHealth;
 };
 
 class FaultSimulator
@@ -29,11 +34,15 @@ public:
 
     FaultState getFaultState() const;
 
+    FaultEffects getFaultEffects() const;
+
 private:
     FaultState faultState;
 
     double timeSinceStart;
     double timeUntilNextFault;
+
+    std::mt19937 randomGenerator;
 };
 
 #endif

@@ -13,21 +13,15 @@ Transmission::Transmission(
 
 void Transmission::update(
     double deltaTime,
-    double engineRpm,
-    double clutchTorque
+    double clutchTorque,
+    int gearPosition,
+    double vehicleMass,
+    double brakeForce
 )
 {
-    // Verificam treapta de viteza
-    int gear =
-        static_cast<int>(
-            data.transmissionGearPosition
-        );
-
-
     double gearRatio = 0.0;
 
-
-    switch (gear)
+    switch (gearPosition)
     {
     case 1:
         gearRatio = configuration.firstGearRatio;
@@ -51,85 +45,78 @@ void Transmission::update(
 
     default:
         gearRatio = 0.0;
+        gearPosition = 0;
         break;
     }
 
+    data.transmissionGearPosition =
+        gearPosition;
 
-    // Calculam turatia transmisiei
+    double tractionForce = 0.0;
+
+    if (gearRatio > 0.0 &&
+        configuration.wheelRadius > 0.0)
+    {
+        double wheelTorque =
+            clutchTorque *
+            gearRatio *
+            configuration.finalDriveRatio *
+            configuration.transmissionEfficiency;
+
+        tractionForce =
+            wheelTorque /
+            configuration.wheelRadius;
+    }
+
+    double netForce =
+        tractionForce -
+        brakeForce;
+
+    double acceleration = 0.0;
+
+    if (vehicleMass > 0.0)
+    {
+        acceleration =
+            netForce /
+            vehicleMass;
+    }
+
+    data.vehicleSpeed +=
+        acceleration *
+        deltaTime;
+
+    if (data.vehicleSpeed < 0.0)
+    {
+        data.vehicleSpeed = 0.0;
+    }
+
+    double wheelAngularVelocity = 0.0;
+
+    if (configuration.wheelRadius > 0.0)
+    {
+        wheelAngularVelocity =
+            data.vehicleSpeed /
+            configuration.wheelRadius;
+    }
+
+    data.wheelRpm =
+        wheelAngularVelocity *
+        60.0 /
+        (
+            2.0 *
+            3.14159265359
+        );
+
     if (gearRatio > 0.0)
     {
         data.transmissionRpm =
-            engineRpm /
+            data.wheelRpm *
+            configuration.finalDriveRatio *
             gearRatio;
     }
     else
     {
         data.transmissionRpm = 0.0;
-    }
-
-
-    // Calculam turatia rotii
-    if (configuration.finalDriveRatio > 0.0)
-    {
-        data.wheelRpm =
-            data.transmissionRpm /
-            configuration.finalDriveRatio;
-    }
-    else
-    {
-        data.wheelRpm = 0.0;
-    }
-
-
-    // Calculam viteza masinii
-    // v = omega * r
-
-    double wheelAngularVelocity =
-        data.wheelRpm *
-        2.0 *
-        3.14159265359 /
-        60.0;
-
-
-    double vehicleSpeedMetersPerSecond =
-        wheelAngularVelocity *
-        configuration.wheelRadius;
-
-
-    // m/s -> km/h
-    data.vehicleSpeed =
-        vehicleSpeedMetersPerSecond *
-        3.6;
-
-
-    // Temperatura transmisiei
-    double transmissionPower =
-        clutchTorque *
-        data.transmissionRpm *
-        2.0 *
-        3.14159265359 /
-        60.0;
-
-
-    double powerLoss =
-        transmissionPower *
-        (
-            1.0 -
-            configuration.transmissionEfficiency
-        );
-
-
-    // Pentru moment folosim o aproximare simpla
-    data.transmissionTemperature +=
-        powerLoss *
-        deltaTime *
-        0.001;
-
-
-    // Temperatura nu trebuie sa fie negativa
-    if (data.transmissionTemperature < 0.0)
-    {
-        data.transmissionTemperature = 0.0;
     }
 }
 
