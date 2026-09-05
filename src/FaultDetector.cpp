@@ -1,138 +1,300 @@
 #include "FaultDetector.h"
 
+#include <cmath>
+
 
 FaultDetector::FaultDetector()
 {
+    previousVehicleSpeed =
+        0.0;
+
+    previousVehicleSpeedInitialized =
+        false;
+
+    clutchSlipDuration =
+        0.0;
+
+    transmissionLossDuration =
+        0.0;
+
+    enginePerformanceLossDuration =
+        0.0;
 }
 
 
-FaultDetectionResult FaultDetector::analyze(
-    const TelemetryData& telemetry
-) const
+DetectedFaultType FaultDetector::detect(
+    const TelemetryData& telemetry,
+    double deltaTime,
+    double acceleratorInput,
+    double brakeInput,
+    double vehicleMass
+)
 {
-    FaultDetectionResult result;
-
-    result.fault = DetectedFault::None;
-    result.detected = false;
-    result.severity = 0.0;
+    double currentVehicleSpeed =
+        telemetry.transmission.vehicleSpeed;
 
 
-    // Verificarea supraincalzirii motorului
-    if (telemetry.engine.engineTemperature > 110.0)
+    double vehicleAcceleration =
+        0.0;
+
+
+    if (previousVehicleSpeedInitialized &&
+        deltaTime > 0.0)
     {
-        result.fault =
-            DetectedFault::EngineOverheating;
-
-        result.detected = true;
-
-        result.severity =
-            (telemetry.engine.engineTemperature - 110.0)
-            / 30.0;
+        vehicleAcceleration =
+            (
+                currentVehicleSpeed -
+                previousVehicleSpeed
+            ) /
+            deltaTime;
     }
 
 
-    // Verificarea presiunii uleiului
-    else if (telemetry.engine.oilPressure < 1.5)
+    previousVehicleSpeed =
+        currentVehicleSpeed;
+
+    previousVehicleSpeedInitialized =
+        true;
+
+
+    if (telemetry.engine.engineTemperature >
+        110.0)
     {
-        result.fault =
-            DetectedFault::LowOilPressure;
-
-        result.detected = true;
-
-        result.severity =
-            (1.5 - telemetry.engine.oilPressure)
-            / 1.5;
+        return DetectedFaultType::EngineOverheating;
     }
 
 
-    // Verificarea temperaturii lichidului de racire
-    else if (telemetry.engine.coolantTemperature > 110.0)
+    if (telemetry.engine.rpm > 600.0 &&
+        telemetry.engine.oilPressure < 1.2)
     {
-        result.fault =
-            DetectedFault::EngineOverheating;
-
-        result.detected = true;
-
-        result.severity =
-            (telemetry.engine.coolantTemperature - 110.0)
-            / 30.0;
+        return DetectedFaultType::LowOilPressure;
     }
 
 
-    // Verificarea nivelului lichidului de racire
-    else if (telemetry.engine.coolantLevel < 20.0)
+    if (telemetry.engine.rpm > 600.0 &&
+        telemetry.engine.coolantFlowRate < 8.0)
     {
-        result.fault =
-            DetectedFault::LowCoolantLevel;
-
-        result.detected = true;
-
-        result.severity =
-            (20.0 - telemetry.engine.coolantLevel)
-            / 20.0;
+        return DetectedFaultType::CoolingSystemFailure;
     }
 
 
-    // Verificarea bateriei
-    else if (telemetry.battery.batteryVoltage < 11.5)
+    if (telemetry.battery.batteryCurrent > 15.0 &&
+        telemetry.battery.batteryVoltage < 12.35)
     {
-        result.fault =
-            DetectedFault::LowBatteryVoltage;
-
-        result.detected = true;
-
-        result.severity =
-            (11.5 - telemetry.battery.batteryVoltage)
-            / 2.0;
+        return DetectedFaultType::BatteryVoltageDrop;
     }
 
 
-    // Verificarea franelor
-    else if (telemetry.brake.brakeDiscTemperature > 500.0)
+    if (telemetry.engine.rpm > 700.0)
     {
-        result.fault =
-            DetectedFault::BrakeOverheating;
+        double minimumExpectedAlternatorCurrent =
+            0.012 *
+            telemetry.engine.rpm;
 
-        result.detected = true;
 
-        result.severity =
-            (telemetry.brake.brakeDiscTemperature - 500.0)
-            / 300.0;
+        if (telemetry.alternator.alternatorCurrent <
+            minimumExpectedAlternatorCurrent)
+        {
+            return DetectedFaultType::LowAlternatorOutput;
+        }
     }
 
 
-    // Verificarea ambreiajului
-    else if (telemetry.clutch.clutchSlip > 500.0)
+    if (brakeInput >= 20.0)
     {
-        result.fault =
-            DetectedFault::ClutchSlip;
+        double minimumExpectedBrakePressure =
+            brakeInput *
+            0.75;
 
-        result.detected = true;
 
-        result.severity =
-            (telemetry.clutch.clutchSlip - 500.0)
-            / 2000.0;
+        if (telemetry.brake.brakeFluidPressure <
+            minimumExpectedBrakePressure)
+        {
+            return DetectedFaultType::BrakeFailure;
+        }
     }
 
 
-    // Verificarea temperaturii transmisiei
-    else if (telemetry.transmission.transmissionTemperature > 120.0)
+    if (telemetry.brake.brakeDiscTemperature >
+        500.0)
     {
-        result.fault =
-            DetectedFault::TransmissionOverheating;
-
-        result.detected = true;
-
-        result.severity =
-            (telemetry.transmission.transmissionTemperature - 120.0)
-            / 50.0;
+        return DetectedFaultType::BrakeOverheating;
     }
 
 
-    if (result.severity > 1.0)
+    bool enginePerformanceTestActive =
+        acceleratorInput >= 30.0 &&
+        telemetry.engine.rpm > 900.0 &&
+        telemetry.transmission.transmissionGearPosition > 0 &&
+        telemetry.clutch.clutchEngagement > 90.0;
+
+
+    if (enginePerformanceTestActive)
     {
-        result.severity = 1.0;
+        double minimumExpectedTorque =
+            telemetry.engine.throttlePosition *
+            1.3;
+
+
+        if (telemetry.engine.engineTorque <
+            minimumExpectedTorque)
+        {
+            enginePerformanceLossDuration +=
+                deltaTime;
+        }
+        else
+        {
+            enginePerformanceLossDuration =
+                0.0;
+        }
+    }
+    else
+    {
+        enginePerformanceLossDuration =
+            0.0;
     }
 
-    return result;
+
+    bool transmissionTestActive =
+        telemetry.transmission.transmissionGearPosition > 0 &&
+        telemetry.clutch.clutchEngagement > 95.0 &&
+        brakeInput < 5.0 &&
+        currentVehicleSpeed > 2.0 &&
+        std::abs(
+            telemetry.clutch.transmittedTorque
+        ) > 20.0 &&
+        std::abs(
+            telemetry.transmission.transmissionRpm
+        ) > 100.0;
+
+
+    if (transmissionTestActive &&
+        previousVehicleSpeedInitialized)
+    {
+        double transmissionAngularVelocity =
+            std::abs(
+                telemetry.transmission.transmissionRpm
+            ) *
+            2.0 *
+            3.14159265359 /
+            60.0;
+
+
+        double inputPower =
+            std::abs(
+                telemetry.clutch.transmittedTorque
+            ) *
+            transmissionAngularVelocity;
+
+
+        double outputPower =
+            vehicleMass *
+            vehicleAcceleration *
+            currentVehicleSpeed;
+
+
+        if (outputPower < 0.0)
+        {
+            outputPower =
+                0.0;
+        }
+
+
+        if (inputPower > 100.0)
+        {
+            double estimatedEfficiency =
+                outputPower /
+                inputPower;
+
+
+            if (estimatedEfficiency < 0.78)
+            {
+                transmissionLossDuration +=
+                    deltaTime;
+            }
+            else
+            {
+                transmissionLossDuration =
+                    0.0;
+            }
+        }
+        else
+        {
+            transmissionLossDuration =
+                0.0;
+        }
+    }
+    else
+    {
+        transmissionLossDuration =
+            0.0;
+    }
+
+
+    bool clutchTestActive =
+        telemetry.transmission.transmissionGearPosition > 0 &&
+        telemetry.clutch.clutchEngagement > 90.0 &&
+        acceleratorInput > 20.0 &&
+        telemetry.engine.rpm > 800.0;
+
+
+    if (clutchTestActive)
+    {
+        double clutchSlip =
+            std::abs(
+                telemetry.clutch.clutchSlip
+            );
+
+
+        if (clutchSlip > 500.0)
+        {
+            clutchSlipDuration +=
+                deltaTime;
+        }
+        else
+        {
+            clutchSlipDuration =
+                0.0;
+        }
+    }
+    else
+    {
+        clutchSlipDuration =
+            0.0;
+    }
+
+
+    if (transmissionLossDuration >=
+        1.0)
+    {
+        return
+            DetectedFaultType::TransmissionPerformanceLoss;
+    }
+
+
+    if (enginePerformanceLossDuration >=
+        1.0)
+    {
+        return
+            DetectedFaultType::EnginePerformanceLoss;
+    }
+
+
+    if (clutchSlipDuration >=
+        1.0)
+    {
+        return
+            DetectedFaultType::ExcessiveClutchSlip;
+    }
+
+
+    if (telemetry.transmission.transmissionTemperature >
+        120.0)
+    {
+        return
+            DetectedFaultType::TransmissionOverheating;
+    }
+
+
+    return DetectedFaultType::None;
 }

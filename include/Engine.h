@@ -24,6 +24,10 @@ public:
         double health
     );
 
+    void setHealth(
+        double health
+    );
+
     EngineData getTelemetry() const;
 
 private:
@@ -31,6 +35,7 @@ private:
     EngineData data;
 
     double coolingSystemHealth;
+    double health;
 };
 
 #endif

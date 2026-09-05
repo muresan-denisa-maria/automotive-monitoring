@@ -5,12 +5,13 @@
 
 struct BatteryConfiguration
 {
-    double nominalVoltage; //tensiunea nominala a bateriei
-    double capacityAh; //capacitatea bateriei in Ah
-    double internalResistance; //rezistenta interna a bateriei
-    double maximumCurrent; //curentul maxim al bateriei
-    double thermalCapacity; //capacitatea termica a bateriei
-    double coolingCoefficient; //coeficientul de racire al bateriei
+    double nominalVoltage;
+    double capacityAh;
+    double internalResistance;
+    double maximumCurrent;
+
+    double thermalCapacity;
+    double coolingCoefficient;
 };
 
 class Battery
@@ -23,10 +24,14 @@ public:
 
     void update(
         double deltaTime,
-        double alternatorCurrent,//cat curent produce alternatorul
-        double starterCurrent,//cat curent consuma electromotorul de pornire
-        double electricalLoad,//cat consuma restul masinii, adica faruri, radio, etc
-        double ambientTemperature//temperatura mediului
+        double alternatorCurrent,
+        double starterCurrent,
+        double electricalLoad,
+        double ambientTemperature
+    );
+
+    void setHealth(
+        double health
     );
 
     BatteryData getTelemetry() const;
@@ -34,6 +39,8 @@ public:
 private:
     BatteryConfiguration configuration;
     BatteryData data;
+
+    double health;
 };
 
 #endif

@@ -66,6 +66,8 @@ Vehicle::Vehicle(
         clutchData
     )
 {
+    detectedFault =
+        DetectedFaultType::None;
 }
 
 
@@ -78,25 +80,51 @@ void Vehicle::update(
         deltaTime
     );
 
+
     FaultEffects faultEffects =
         faultSimulator.getFaultEffects();
+
 
     engine.setCoolingSystemHealth(
         faultEffects.coolingSystemHealth
     );
 
+
+    engine.setHealth(
+        faultEffects.engineHealth
+    );
+
+
+    battery.setHealth(
+        faultEffects.batteryHealth
+    );
+
+
     alternator.setHealth(
         faultEffects.alternatorHealth
     );
+
 
     brake.setHealth(
         faultEffects.brakeHealth
     );
 
+
+    clutch.setHealth(
+        faultEffects.clutchHealth
+    );
+
+
+    transmission.setHealth(
+        faultEffects.transmissionHealth
+    );
+
+
     accelerator.update(
         deltaTime,
         input.acceleratorInput
     );
+
 
     starter.update(
         deltaTime,
@@ -104,6 +132,7 @@ void Vehicle::update(
         input.startCommand,
         20.0
     );
+
 
     engine.update(
         deltaTime,
@@ -113,13 +142,16 @@ void Vehicle::update(
         20.0
     );
 
+
     alternator.update(
         deltaTime,
         engine.getTelemetry().rpm
     );
 
+
     double electricalLoad =
-        10.0;
+        35.0;
+
 
     battery.update(
         deltaTime,
@@ -128,6 +160,7 @@ void Vehicle::update(
         electricalLoad,
         20.0
     );
+
 
     clutch.update(
         deltaTime,
@@ -138,6 +171,7 @@ void Vehicle::update(
         20.0
     );
 
+
     brake.update(
         deltaTime,
         1500.0,
@@ -146,6 +180,7 @@ void Vehicle::update(
         20.0
     );
 
+
     transmission.update(
         deltaTime,
         clutch.getTelemetry().transmittedTorque,
@@ -153,6 +188,24 @@ void Vehicle::update(
         1500.0,
         brake.getTelemetry().brakeForce
     );
+
+
+    DetectedFaultType currentDetectedFault =
+        faultDetector.detect(
+            getTelemetry(),
+            deltaTime,
+            input.acceleratorInput,
+            input.brakeInput,
+            1500.0
+        );
+
+
+    if (currentDetectedFault !=
+        DetectedFaultType::None)
+    {
+        detectedFault =
+            currentDetectedFault;
+    }
 }
 
 
@@ -160,29 +213,38 @@ TelemetryData Vehicle::getTelemetry() const
 {
     TelemetryData telemetry{};
 
+
     telemetry.engine =
         engine.getTelemetry();
+
 
     telemetry.battery =
         battery.getTelemetry();
 
+
     telemetry.alternator =
         alternator.getTelemetry();
+
 
     telemetry.starter =
         starter.getTelemetry();
 
+
     telemetry.transmission =
         transmission.getTelemetry();
+
 
     telemetry.brake =
         brake.getTelemetry();
 
+
     telemetry.accelerator =
         accelerator.getTelemetry();
 
+
     telemetry.clutch =
         clutch.getTelemetry();
+
 
     return telemetry;
 }
@@ -191,4 +253,10 @@ TelemetryData Vehicle::getTelemetry() const
 FaultState Vehicle::getFaultState() const
 {
     return faultSimulator.getFaultState();
+}
+
+
+DetectedFaultType Vehicle::getDetectedFault() const
+{
+    return detectedFault;
 }

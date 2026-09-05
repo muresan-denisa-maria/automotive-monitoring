@@ -34,11 +34,17 @@ public:
         double ambientTemperature
     );
 
+    void setHealth(
+        double health
+    );
+
     ClutchData getTelemetry() const;
 
 private:
     ClutchConfiguration configuration;
     ClutchData data;
+
+    double health;
 };
 
 #endif

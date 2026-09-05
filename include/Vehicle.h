@@ -1,6 +1,8 @@
 #ifndef VEHICLE_H
 #define VEHICLE_H
 
+#include "TelemetryData.h"
+
 #include "Engine.h"
 #include "Battery.h"
 #include "Alternator.h"
@@ -9,17 +11,22 @@
 #include "Brake.h"
 #include "Accelerator.h"
 #include "Clutch.h"
+
 #include "FaultSimulator.h"
-#include "TelemetryData.h"
+#include "FaultDetector.h"
+
 
 struct VehicleInput
 {
     double acceleratorInput;
     double brakeInput;
     double clutchInput;
+
     bool startCommand;
+
     int gearPosition;
 };
+
 
 class Vehicle
 {
@@ -59,6 +66,9 @@ public:
 
     FaultState getFaultState() const;
 
+    DetectedFaultType getDetectedFault() const;
+
+
 private:
     Engine engine;
     Battery battery;
@@ -70,6 +80,10 @@ private:
     Clutch clutch;
 
     FaultSimulator faultSimulator;
+
+    FaultDetector faultDetector;
+
+    DetectedFaultType detectedFault;
 };
 
 #endif

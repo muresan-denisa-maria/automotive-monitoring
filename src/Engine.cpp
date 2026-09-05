@@ -14,6 +14,9 @@ Engine::Engine(
 
     coolingSystemHealth =
         1.0;
+
+    health =
+        1.0;
 }
 
 
@@ -32,6 +35,25 @@ void Engine::setCoolingSystemHealth(
     }
 
     coolingSystemHealth =
+        health;
+}
+
+
+void Engine::setHealth(
+    double health
+)
+{
+    if (health < 0.0)
+    {
+        health = 0.0;
+    }
+
+    if (health > 1.0)
+    {
+        health = 1.0;
+    }
+
+    this->health =
         health;
 }
 
@@ -55,9 +77,31 @@ void Engine::update(
     }
 
     double throttle =
-        throttlePosition / 100.0;
+        throttlePosition /
+        100.0;
 
-    double rpmRatio = 0.0;
+
+    double effectiveMaximumTorque =
+        configuration.maximumTorque *
+        (
+            0.35 +
+            0.65 * health
+        );
+
+    double effectiveFrictionTorque =
+        configuration.frictionTorque *
+        (
+            1.0 +
+            1.5 *
+            (
+                1.0 -
+                health
+            )
+        );
+
+
+    double rpmRatio =
+        0.0;
 
     if (configuration.maxRpm > 0.0)
     {
@@ -76,9 +120,11 @@ void Engine::update(
         rpmRatio = 1.0;
     }
 
+
     bool engineRunning =
         data.rpm >=
         configuration.minimumCombustionRpm;
+
 
     double combustionTorque =
         0.0;
@@ -86,7 +132,7 @@ void Engine::update(
     if (engineRunning)
     {
         combustionTorque =
-            configuration.maximumTorque *
+            effectiveMaximumTorque *
             throttle;
 
         if (data.rpm <
@@ -97,7 +143,7 @@ void Engine::update(
                 data.rpm;
 
             double idleTorque =
-                configuration.frictionTorque +
+                effectiveFrictionTorque +
                 rpmDifference * 0.05;
 
             combustionTorque +=
@@ -105,9 +151,11 @@ void Engine::update(
         }
     }
 
+
     double availableTorque =
         combustionTorque -
-        configuration.frictionTorque;
+        effectiveFrictionTorque;
+
 
     double starterTorque =
         0.0;
@@ -120,14 +168,17 @@ void Engine::update(
             configuration.starterTorque;
     }
 
+
     double netTorque =
         availableTorque +
         starterTorque -
         loadTorque;
 
+
     double angularAcceleration =
         netTorque /
         configuration.engineInertia;
+
 
     double angularVelocity =
         data.rpm *
@@ -135,14 +186,17 @@ void Engine::update(
         3.14159265359 /
         60.0;
 
+
     angularVelocity +=
         angularAcceleration *
         deltaTime;
+
 
     if (angularVelocity < 0.0)
     {
         angularVelocity = 0.0;
     }
+
 
     data.rpm =
         angularVelocity *
@@ -152,12 +206,14 @@ void Engine::update(
             3.14159265359
         );
 
+
     if (data.rpm >
         configuration.maxRpm)
     {
         data.rpm =
             configuration.maxRpm;
     }
+
 
     if (!startCommand &&
         throttlePosition == 0.0 &&
@@ -170,7 +226,9 @@ void Engine::update(
             configuration.idleRpm;
     }
 
-    rpmRatio = 0.0;
+
+    rpmRatio =
+        0.0;
 
     if (configuration.maxRpm > 0.0)
     {
@@ -189,9 +247,11 @@ void Engine::update(
         rpmRatio = 1.0;
     }
 
+
     engineRunning =
         data.rpm >=
         configuration.minimumCombustionRpm;
+
 
     data.engineTorque =
         availableTorque;
@@ -200,6 +260,7 @@ void Engine::update(
     {
         data.engineTorque = 0.0;
     }
+
 
     data.throttlePosition =
         throttlePosition;
@@ -221,7 +282,16 @@ void Engine::update(
                 configuration.idleHeatPower
             ) *
             engineLoadFactor;
+
+        engineHeatPower *=
+            1.0 +
+            0.8 *
+            (
+                1.0 -
+                health
+            );
     }
+
 
     double engineToCoolantPower =
         configuration.engineToCoolantCoefficient *
@@ -230,6 +300,7 @@ void Engine::update(
             data.coolantTemperature
         );
 
+
     double engineToOilPower =
         configuration.engineToOilCoefficient *
         (
@@ -237,10 +308,12 @@ void Engine::update(
             data.oilTemperature
         );
 
+
     double engineNetHeatPower =
         engineHeatPower -
         engineToCoolantPower -
         engineToOilPower;
+
 
     if (configuration.engineThermalCapacity > 0.0)
     {
@@ -260,9 +333,11 @@ void Engine::update(
             ambientTemperature
         );
 
+
     double oilNetHeatPower =
         engineToOilPower -
         oilCoolingPower;
+
 
     if (configuration.oilThermalCapacity > 0.0)
     {
@@ -287,9 +362,11 @@ void Engine::update(
             0.0;
     }
 
+
     double maximumPumpSpeed =
         configuration.maxRpm *
         configuration.coolantPumpRatio;
+
 
     double coolantFlowRatio =
         0.0;
@@ -301,6 +378,7 @@ void Engine::update(
             maximumPumpSpeed;
     }
 
+
     if (coolantFlowRatio < 0.0)
     {
         coolantFlowRatio = 0.0;
@@ -311,13 +389,16 @@ void Engine::update(
         coolantFlowRatio = 1.0;
     }
 
+
     double effectiveCoolantFlowRatio =
         coolantFlowRatio *
         coolingSystemHealth;
 
+
     data.coolantFlowRate =
         configuration.maximumCoolantFlowRate *
         effectiveCoolantFlowRatio;
+
 
     double radiatorCoolingPower =
         configuration.radiatorCoolingCoefficient *
@@ -327,9 +408,11 @@ void Engine::update(
             ambientTemperature
         );
 
+
     double coolantNetHeatPower =
         engineToCoolantPower -
         radiatorCoolingPower;
+
 
     if (configuration.coolantThermalCapacity > 0.0)
     {
@@ -379,6 +462,7 @@ void Engine::update(
     double intakeTargetTemperature =
         ambientTemperature;
 
+
     if (engineRunning)
     {
         intakeTargetTemperature +=
@@ -392,6 +476,7 @@ void Engine::update(
                 0.5 * throttle
             );
     }
+
 
     if (configuration.intakeResponseTime > 0.0)
     {
@@ -425,6 +510,7 @@ void Engine::update(
     double exhaustTargetTemperature =
         ambientTemperature;
 
+
     if (engineRunning)
     {
         double exhaustLoadFactor =
@@ -439,6 +525,7 @@ void Engine::update(
             ) *
             exhaustLoadFactor;
     }
+
 
     if (configuration.exhaustResponseTime > 0.0)
     {

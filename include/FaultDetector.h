@@ -3,33 +3,54 @@
 
 #include "TelemetryData.h"
 
-enum class DetectedFault
+
+enum class DetectedFaultType
 {
     None,
+
     EngineOverheating,
+    EnginePerformanceLoss,
+
     LowOilPressure,
-    LowBatteryVoltage,
+
+    CoolingSystemFailure,
+
+    BatteryVoltageDrop,
+    LowAlternatorOutput,
+
+    BrakeFailure,
     BrakeOverheating,
-    ClutchSlip,
-    LowCoolantLevel,
+
+    ExcessiveClutchSlip,
+
+    TransmissionPerformanceLoss,
     TransmissionOverheating
 };
 
-struct FaultDetectionResult
-{
-    DetectedFault fault;
-    bool detected;
-    double severity;
-};
 
 class FaultDetector
 {
 public:
     FaultDetector();
 
-    FaultDetectionResult analyze(
-        const TelemetryData& telemetry
-    ) const;
+    DetectedFaultType detect(
+        const TelemetryData& telemetry,
+        double deltaTime,
+        double acceleratorInput,
+        double brakeInput,
+        double vehicleMass
+    );
+
+private:
+    double previousVehicleSpeed;
+
+    bool previousVehicleSpeedInitialized;
+
+    double clutchSlipDuration;
+
+    double transmissionLossDuration;
+
+    double enginePerformanceLossDuration;
 };
 
 #endif

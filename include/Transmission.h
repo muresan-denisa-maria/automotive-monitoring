@@ -16,6 +16,10 @@ struct TransmissionConfiguration
     double fifthGearRatio;
 
     double transmissionEfficiency;
+
+    double thermalCapacity;
+    double coolingCoefficient;
+    double ambientTemperature;
 };
 
 class Transmission
@@ -34,11 +38,17 @@ public:
         double brakeForce
     );
 
+    void setHealth(
+        double health
+    );
+
     TransmissionData getTelemetry() const;
 
 private:
     TransmissionConfiguration configuration;
     TransmissionData data;
+
+    double health;
 };
 
 #endif

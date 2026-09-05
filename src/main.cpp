@@ -19,11 +19,67 @@ const char* faultTypeToString(
     case FaultType::Brake:
         return "Brake";
 
+    case FaultType::Battery:
+        return "Battery";
+
+    case FaultType::Engine:
+        return "Engine";
+
+    case FaultType::Clutch:
+        return "Clutch";
+
+    case FaultType::Transmission:
+        return "Transmission";
+
     default:
         return "None";
     }
 }
 
+
+const char* detectedFaultTypeToString(
+    DetectedFaultType type
+)
+{
+    switch (type)
+    {
+    case DetectedFaultType::EngineOverheating:
+        return "Engine Overheating";
+
+    case DetectedFaultType::EnginePerformanceLoss:
+        return "Engine Performance Loss";
+
+    case DetectedFaultType::LowOilPressure:
+        return "Low Oil Pressure";
+
+    case DetectedFaultType::CoolingSystemFailure:
+        return "Cooling System Failure";
+
+    case DetectedFaultType::BatteryVoltageDrop:
+        return "Battery Voltage Drop";
+
+    case DetectedFaultType::LowAlternatorOutput:
+        return "Low Alternator Output";
+
+    case DetectedFaultType::BrakeFailure:
+        return "Brake Failure";
+
+    case DetectedFaultType::BrakeOverheating:
+        return "Brake Overheating";
+
+    case DetectedFaultType::ExcessiveClutchSlip:
+        return "Excessive Clutch Slip";
+
+    case DetectedFaultType::TransmissionPerformanceLoss:
+        return "Transmission Performance Loss";
+
+    case DetectedFaultType::TransmissionOverheating:
+        return "Transmission Overheating";
+
+    default:
+        return "None";
+    }
+}
 
 int main()
 {
@@ -171,6 +227,10 @@ int main()
 
     transmissionConfiguration.transmissionEfficiency = 0.92;
 
+    transmissionConfiguration.thermalCapacity = 70000.0;
+    transmissionConfiguration.coolingCoefficient = 80.0;
+    transmissionConfiguration.ambientTemperature = 20.0;
+
 
     TransmissionData transmissionData{};
 
@@ -279,6 +339,7 @@ int main()
     {
         double time =
             i * deltaTime;
+
 
         input.startCommand = false;
         input.acceleratorInput = 0.0;
@@ -483,6 +544,10 @@ int main()
             vehicle.getFaultState();
 
 
+        DetectedFaultType detectedFault =
+            vehicle.getDetectedFault();
+
+
         std::cout
             << "Time: "
             << time + deltaTime
@@ -519,6 +584,19 @@ int main()
                 << "%"
                 << std::endl;
         }
+
+
+        if (detectedFault !=
+                DetectedFaultType::None &&
+            i % 10 == 0)
+        {
+            std::cout
+                << "DETECTED -> "
+                << detectedFaultTypeToString(
+                    detectedFault
+                )
+                << std::endl;
+        }
     }
 
 
@@ -530,9 +608,20 @@ int main()
         vehicle.getFaultState();
 
 
+    DetectedFaultType finalDetectedFault =
+        vehicle.getDetectedFault();
+
+
     std::cout
         << std::endl
         << "FINAL TELEMETRY"
+        << std::endl;
+
+
+    std::cout
+        << "Battery temperature: "
+        << telemetry.battery.batteryTemperature
+        << " C"
         << std::endl;
 
 
@@ -777,6 +866,20 @@ int main()
         << "Severity: "
         << finalFault.severity * 100.0
         << "%"
+        << std::endl;
+
+
+    std::cout
+        << std::endl
+        << "FAULT DETECTOR"
+        << std::endl;
+
+
+    std::cout
+        << "Detected: "
+        << detectedFaultTypeToString(
+            finalDetectedFault
+        )
         << std::endl;
 
 

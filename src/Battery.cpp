@@ -6,8 +6,33 @@ Battery::Battery(
     const BatteryData& initialData
 )
 {
-    this->configuration = configuration;
-    data = initialData;
+    this->configuration =
+        configuration;
+
+    this->data =
+        initialData;
+
+    health =
+        1.0;
+}
+
+
+void Battery::setHealth(
+    double health
+)
+{
+    if (health < 0.0)
+    {
+        health = 0.0;
+    }
+
+    if (health > 1.0)
+    {
+        health = 1.0;
+    }
+
+    this->health =
+        health;
 }
 
 
@@ -19,65 +44,110 @@ void Battery::update(
     double ambientTemperature
 )
 {
-    // Calcularea curentului bateriei
-    // Curentul alternatorului incarca bateria
-    // Curentul starterului si consumatorii descarca bateria
     double batteryCurrent =
         electricalLoad +
         starterCurrent -
         alternatorCurrent;
 
+    double effectiveMaximumCurrent =
+        configuration.maximumCurrent *
+        (
+            0.5 +
+            0.5 * health
+        );
+
+    if (batteryCurrent >
+        effectiveMaximumCurrent)
+    {
+        batteryCurrent =
+            effectiveMaximumCurrent;
+    }
+
+    if (batteryCurrent <
+        -effectiveMaximumCurrent)
+    {
+        batteryCurrent =
+            -effectiveMaximumCurrent;
+    }
+
     data.batteryCurrent =
         batteryCurrent;
 
 
-    // Calcularea tensiunii in gol in functie de SOC
+    double stateOfChargeFraction =
+        data.batteryStateOfCharge /
+        100.0;
+
     double openCircuitVoltage =
         configuration.nominalVoltage *
         (
             0.9 +
             0.1 *
+            stateOfChargeFraction
+        );
+
+
+    double effectiveInternalResistance =
+        configuration.internalResistance *
+        (
+            1.0 +
+            4.0 *
             (
-                data.batteryStateOfCharge /
-                100.0
+                1.0 -
+                health
             )
         );
 
 
-    // Calcularea tensiunii bateriei
-    // V = Voc - I * R
     data.batteryVoltage =
         openCircuitVoltage -
-        data.batteryCurrent *
-        configuration.internalResistance;
+        batteryCurrent *
+        effectiveInternalResistance;
+
+    if (data.batteryVoltage < 0.0)
+    {
+        data.batteryVoltage = 0.0;
+    }
 
 
-    // Calcularea pierderilor interne
-    // P = I^2 * R
-    double internalPowerLoss =
-        data.batteryCurrent *
-        data.batteryCurrent *
-        configuration.internalResistance;
+    double effectiveCapacity =
+        configuration.capacityAh *
+        (
+            0.4 +
+            0.6 * health
+        );
+
+    if (effectiveCapacity > 0.0)
+    {
+        double chargeChangeAh =
+            batteryCurrent *
+            deltaTime /
+            3600.0;
+
+        data.batteryStateOfCharge -=
+            (
+                chargeChangeAh /
+                effectiveCapacity
+            ) *
+            100.0;
+    }
+
+    if (data.batteryStateOfCharge < 0.0)
+    {
+        data.batteryStateOfCharge = 0.0;
+    }
+
+    if (data.batteryStateOfCharge > 100.0)
+    {
+        data.batteryStateOfCharge = 100.0;
+    }
 
 
-    // Energia pierduta prin rezistenta interna
-    double internalEnergyLoss =
-        internalPowerLoss *
-        deltaTime;
+    double heatPower =
+        batteryCurrent *
+        batteryCurrent *
+        effectiveInternalResistance;
 
-
-    // Calcularea cresterii temperaturii
-    // Q = C * deltaT
-    double temperatureIncrease =
-        internalEnergyLoss /
-        configuration.thermalCapacity;
-
-    data.batteryTemperature +=
-        temperatureIncrease;
-
-
-    // Calcularea racirii bateriei
-    // P = h * (T - Tambient)
     double coolingPower =
         configuration.coolingCoefficient *
         (
@@ -85,83 +155,25 @@ void Battery::update(
             ambientTemperature
         );
 
+    double netHeatPower =
+        heatPower -
+        coolingPower;
 
-    // Energia pierduta prin racire
-    double coolingEnergy =
-        coolingPower *
-        deltaTime;
+    if (configuration.thermalCapacity > 0.0)
+    {
+        data.batteryTemperature +=
+            (
+                netHeatPower *
+                deltaTime
+            ) /
+            configuration.thermalCapacity;
+    }
 
-
-    // Scaderea temperaturii datorita racirii
-    double coolingTemperature =
-        coolingEnergy /
-        configuration.thermalCapacity;
-
-    data.batteryTemperature -=
-        coolingTemperature;
-
-
-    // Temperatura bateriei nu poate fi mai mica decat temperatura mediului
     if (data.batteryTemperature <
         ambientTemperature)
     {
         data.batteryTemperature =
             ambientTemperature;
-    }
-
-
-    // Calcularea modificarii starii de incarcare
-    double chargeChange =
-        (
-            data.batteryCurrent *
-            deltaTime
-        ) /
-        (
-            3600.0 *
-            configuration.capacityAh
-        );
-
-
-    data.batteryStateOfCharge -=
-        chargeChange * 100.0;
-
-
-    // State of charge nu poate fi mai mare de 100%
-    if (data.batteryStateOfCharge > 100.0)
-    {
-        data.batteryStateOfCharge = 100.0;
-    }
-
-
-    // State of charge nu poate fi mai mic de 0%
-    if (data.batteryStateOfCharge < 0.0)
-    {
-        data.batteryStateOfCharge = 0.0;
-    }
-
-
-    // Curentul nu poate depasi limita maxima a bateriei
-    if (data.batteryCurrent >
-        configuration.maximumCurrent)
-    {
-        data.batteryCurrent =
-            configuration.maximumCurrent;
-    }
-
-
-    // Curentul nu poate fi mai mic decat limita negativa
-    if (data.batteryCurrent <
-        -configuration.maximumCurrent)
-    {
-        data.batteryCurrent =
-            -configuration.maximumCurrent;
-    }
-
-
-    // Tensiunea bateriei nu poate fi negativa
-    if (data.batteryVoltage < 0.0)
-    {
-        data.batteryVoltage = 0.0;
     }
 }
 

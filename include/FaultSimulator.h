@@ -8,7 +8,11 @@ enum class FaultType
     None,
     CoolingSystem,
     Alternator,
-    Brake
+    Brake,
+    Battery,
+    Engine,
+    Clutch,
+    Transmission
 };
 
 struct FaultState
@@ -23,6 +27,10 @@ struct FaultEffects
     double coolingSystemHealth;
     double alternatorHealth;
     double brakeHealth;
+    double batteryHealth;
+    double engineHealth;
+    double clutchHealth;
+    double transmissionHealth;
 };
 
 class FaultSimulator

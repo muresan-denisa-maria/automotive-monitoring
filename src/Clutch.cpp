@@ -6,8 +6,33 @@ Clutch::Clutch(
     const ClutchData& initialData
 )
 {
-    this->configuration = configuration;
-    data = initialData;
+    this->configuration =
+        configuration;
+
+    data =
+        initialData;
+
+    health =
+        1.0;
+}
+
+
+void Clutch::setHealth(
+    double health
+)
+{
+    if (health < 0.0)
+    {
+        health = 0.0;
+    }
+
+    if (health > 1.0)
+    {
+        health = 1.0;
+    }
+
+    this->health =
+        health;
 }
 
 
@@ -30,17 +55,23 @@ void Clutch::update(
         clutchInput = 100.0;
     }
 
+
     double clutchEngagement =
         1.0 -
-        clutchInput / 100.0;
+        clutchInput /
+        100.0;
+
 
     data.clutchEngagement =
         clutchEngagement *
         100.0;
 
+
     double maximumTransmittedTorque =
         configuration.maximumClutchTorque *
-        clutchEngagement;
+        clutchEngagement *
+        health;
+
 
     double engineAngularVelocity =
         engineRpm *
@@ -48,25 +79,35 @@ void Clutch::update(
         3.14159265359 /
         60.0;
 
+
     double transmissionAngularVelocity =
         transmissionRpm *
         2.0 *
         3.14159265359 /
         60.0;
 
+
     double slipAngularVelocity =
         engineAngularVelocity -
         transmissionAngularVelocity;
 
-    double synchronizationTorque =
+
+    double effectiveSlipTorqueCoefficient =
         configuration.slipTorqueCoefficient *
+        health;
+
+
+    double synchronizationTorque =
+        effectiveSlipTorqueCoefficient *
         slipAngularVelocity *
         clutchEngagement;
+
 
     double transmittedTorque =
         engineTorque *
         clutchEngagement +
         synchronizationTorque;
+
 
     if (transmittedTorque >
         maximumTransmittedTorque)
@@ -75,6 +116,7 @@ void Clutch::update(
             maximumTransmittedTorque;
     }
 
+
     if (transmittedTorque <
         -maximumTransmittedTorque)
     {
@@ -82,16 +124,20 @@ void Clutch::update(
             -maximumTransmittedTorque;
     }
 
+
     data.transmittedTorque =
         transmittedTorque;
+
 
     data.clutchSlip =
         engineRpm -
         transmissionRpm;
 
+
     double slipPower =
         transmittedTorque *
         slipAngularVelocity;
+
 
     if (slipPower < 0.0)
     {
@@ -99,23 +145,29 @@ void Clutch::update(
             -slipPower;
     }
 
+
     double slipEnergy =
         slipPower *
         deltaTime;
+
 
     double clutchEnergy =
         slipEnergy *
         configuration.clutchEnergyFraction;
 
-    double temperatureIncrease =
-        clutchEnergy /
-        (
-            configuration.clutchDiscMass *
-            configuration.clutchDiscSpecificHeat
-        );
 
-    data.clutchDiscTemperature +=
-        temperatureIncrease;
+    double thermalCapacity =
+        configuration.clutchDiscMass *
+        configuration.clutchDiscSpecificHeat;
+
+
+    if (thermalCapacity > 0.0)
+    {
+        data.clutchDiscTemperature +=
+            clutchEnergy /
+            thermalCapacity;
+    }
+
 
     double coolingPower =
         configuration.coolingCoefficient *
@@ -124,19 +176,19 @@ void Clutch::update(
             ambientTemperature
         );
 
+
     double coolingEnergy =
         coolingPower *
         deltaTime;
 
-    double coolingTemperature =
-        coolingEnergy /
-        (
-            configuration.clutchDiscMass *
-            configuration.clutchDiscSpecificHeat
-        );
 
-    data.clutchDiscTemperature -=
-        coolingTemperature;
+    if (thermalCapacity > 0.0)
+    {
+        data.clutchDiscTemperature -=
+            coolingEnergy /
+            thermalCapacity;
+    }
+
 
     if (data.clutchDiscTemperature <
         ambientTemperature)
