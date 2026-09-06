@@ -2,6 +2,7 @@
 
 #include "Vehicle.h"
 #include "FaultSimulator.h"
+#include "JsonExporter.h"
 
 
 const char* faultTypeToString(
@@ -882,6 +883,28 @@ int main()
         )
         << std::endl;
 
+    bool jsonSaved =
+    JsonExporter::saveToFile(
+        "automotive_data.json",
+        telemetry,
+        finalDetectedFault
+    );
+
+
+if (jsonSaved)
+{
+    std::cout
+        << std::endl
+        << "Telemetry saved to automotive_data.json"
+        << std::endl;
+}
+else
+{
+    std::cout
+        << std::endl
+        << "Failed to save automotive_data.json"
+        << std::endl;
+}
 
     return 0;
 }

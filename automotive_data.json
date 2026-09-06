@@ -1,0 +1,45 @@
+{
+  "engine": {
+    "rpm": 800,
+    "temperature": 26.7947,
+    "torque": 0,
+    "oilPressure": 1.86923,
+    "oilTemperature": 20.523,
+    "coolantTemperature": 21.541,
+    "coolantPressure": 0.530249,
+    "coolantFlowRate": 5.18548
+  },
+  "battery": {
+    "voltage": 12.504,
+    "current": 19,
+    "temperature": 20.0049,
+    "stateOfCharge": 99.9169
+  },
+  "alternator": {
+    "voltage": 14.2,
+    "current": 16,
+    "temperature": 21.2029
+  },
+  "transmission": {
+    "temperature": 20.318,
+    "gear": 0,
+    "rpm": 0,
+    "wheelRpm": 0,
+    "vehicleSpeed": 0
+  },
+  "brake": {
+    "fluidPressure": 40,
+    "padWear": 99.7407,
+    "discTemperature": 82.7212,
+    "force": 4800
+  },
+  "clutch": {
+    "engagement": 0,
+    "transmittedTorque": 0,
+    "slip": 800,
+    "discTemperature": 29.3646
+  },
+  "fault": {
+    "detected": "Cooling System Failure"
+  }
+}
