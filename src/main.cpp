@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 
 #include "Vehicle.h"
 #include "FaultSimulator.h"
@@ -82,6 +83,7 @@ const char* detectedFaultTypeToString(
         return "None";
     }
 }
+
 
 int main()
 {
@@ -599,6 +601,41 @@ int main()
                 )
                 << std::endl;
         }
+
+
+        if ((i + 1) % 10 == 0)
+        {
+            std::string jsonData =
+                JsonExporter::toJson(
+                    telemetry,
+                    detectedFault
+                );
+
+
+            bool sent =
+                HttpClient::postJson(
+                    "http://localhost:8080/telemetry",
+                    jsonData
+                );
+
+
+            if (sent)
+            {
+                std::cout
+                    << "HTTP -> Telemetry sent at "
+                    << time + deltaTime
+                    << " s"
+                    << std::endl;
+            }
+            else
+            {
+                std::cout
+                    << "HTTP -> Failed to send telemetry at "
+                    << time + deltaTime
+                    << " s"
+                    << std::endl;
+            }
+        }
     }
 
 
@@ -884,54 +921,30 @@ int main()
         )
         << std::endl;
 
+
     bool jsonSaved =
-    JsonExporter::saveToFile(
-        "automotive_data.json",
-        telemetry,
-        finalDetectedFault
-    );
+        JsonExporter::saveToFile(
+            "automotive_data.json",
+            telemetry,
+            finalDetectedFault
+        );
 
 
-if (jsonSaved)
-{
-    std::cout
-        << std::endl
-        << "Telemetry saved to automotive_data.json"
-        << std::endl;
-}
-else
-{
-    std::cout
-        << std::endl
-        << "Failed to save automotive_data.json"
-        << std::endl;
-}
-std::string jsonData =
-    JsonExporter::toJson(
-        telemetry,
-        finalDetectedFault
-    );
+    if (jsonSaved)
+    {
+        std::cout
+            << std::endl
+            << "Telemetry saved to automotive_data.json"
+            << std::endl;
+    }
+    else
+    {
+        std::cout
+            << std::endl
+            << "Failed to save automotive_data.json"
+            << std::endl;
+    }
 
-
-bool sent =
-    HttpClient::postJson(
-        "http://localhost:8080/telemetry",
-        jsonData
-    );
-
-
-if (sent)
-{
-    std::cout
-        << "Telemetry sent to Java backend"
-        << std::endl;
-}
-else
-{
-    std::cout
-        << "Failed to send telemetry"
-        << std::endl;
-}
 
     return 0;
 }

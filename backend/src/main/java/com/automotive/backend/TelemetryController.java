@@ -16,7 +16,7 @@ public class TelemetryController {
         System.out.println(telemetryJson);
 
         return ResponseEntity.ok(
-                "Telemetry received successfully"
+                "Telemetry received successfully\n"
         );
     }
 }
