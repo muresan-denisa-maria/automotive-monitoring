@@ -3,6 +3,7 @@
 #include "Vehicle.h"
 #include "FaultSimulator.h"
 #include "JsonExporter.h"
+#include "HttpClient.h"
 
 
 const char* faultTypeToString(
@@ -903,6 +904,32 @@ else
     std::cout
         << std::endl
         << "Failed to save automotive_data.json"
+        << std::endl;
+}
+std::string jsonData =
+    JsonExporter::toJson(
+        telemetry,
+        finalDetectedFault
+    );
+
+
+bool sent =
+    HttpClient::postJson(
+        "http://localhost:8080/telemetry",
+        jsonData
+    );
+
+
+if (sent)
+{
+    std::cout
+        << "Telemetry sent to Java backend"
+        << std::endl;
+}
+else
+{
+    std::cout
+        << "Failed to send telemetry"
         << std::endl;
 }
 
